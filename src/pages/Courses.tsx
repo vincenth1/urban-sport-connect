@@ -6,6 +6,8 @@ import CourseGrid from '@/components/CourseGrid';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const Courses = () => {
   const { courses, isLoading } = useCourses();
@@ -13,27 +15,33 @@ const Courses = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Available Courses</h1>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8 mt-20">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Available Courses</h1>
+          
+          {isConnected && isTrainer && (
+            <Button 
+              onClick={() => navigate('/create-course')}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Create Course
+            </Button>
+          )}
+        </div>
         
-        {isConnected && isTrainer && (
-          <Button 
-            onClick={() => navigate('/create-course')}
-            className="flex items-center gap-2"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Create Course
-          </Button>
-        )}
+        <CourseGrid 
+          courses={courses} 
+          isLoading={isLoading}
+          showBookButton={isConnected}
+          emptyMessage="No courses available. Be the first to create one!"
+        />
       </div>
       
-      <CourseGrid 
-        courses={courses} 
-        isLoading={isLoading}
-        showBookButton={isConnected}
-        emptyMessage="No courses available. Be the first to create one!"
-      />
+      <Footer />
     </div>
   );
 };
