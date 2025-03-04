@@ -2,298 +2,228 @@
 import React, { useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useCourses } from '@/hooks/useCourses';
-import WalletConnect from '@/components/WalletConnect';
-import CourseGrid from '@/components/CourseGrid';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, User, Edit, Copy, CheckCircle, Clock } from 'lucide-react';
+import CourseGrid from '@/components/CourseGrid';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useWeb3 } from '@/context/Web3Context';
-import { BookedCourse } from '@/types';
-import { format } from 'date-fns';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { Loader2, User as UserIcon, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
-  const { isConnected, account, displayAddress } = useWallet();
-  const { user, isUserLoading, registerAsTrainer } = useWeb3();
+  const { isConnected, displayAddress, user, isUserLoading } = useWallet();
   const { bookedCourses } = useCourses();
-  const [copied, setCopied] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [trainerName, setTrainerName] = useState('');
-  const [trainerBio, setTrainerBio] = useState('');
-  const [trainerAvatar, setTrainerAvatar] = useState('https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=300');
+  const { registerAsTrainer } = useWeb3();
+  const navigate = useNavigate();
+  
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatar, setAvatar] = useState('https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const handleRegisterAsTrainer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      await registerAsTrainer(name, bio, avatar);
+      // Refresh the page after successful registration
+      window.location.reload();
+    } catch (error) {
+      console.error('Registration failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   
   if (!isConnected) {
-    return <WalletConnect fullPage message="Connect your wallet to view your profile" />;
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="max-w-md mx-auto">
+          <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Wallet Not Connected</h1>
+          <p className="text-muted-foreground mb-8">
+            Please connect your wallet to view your profile and booked courses.
+          </p>
+          <Button onClick={() => navigate('/')}>
+            Go to Home
+          </Button>
+        </div>
+      </div>
+    );
   }
   
   if (isUserLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="container mx-auto px-4 py-16 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
   
-  const copyAddress = () => {
-    if (account) {
-      navigator.clipboard.writeText(account);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      
-      toast({
-        title: "Address Copied",
-        description: "Wallet address copied to clipboard",
-      });
-    }
-  };
-  
-  const handleRegisterAsTrainer = async () => {
-    if (!trainerName || !trainerBio) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill out all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsRegistering(true);
-    try {
-      await registerAsTrainer(trainerName, trainerBio, trainerAvatar);
-      setTrainerName('');
-      setTrainerBio('');
-    } catch (error) {
-      console.error("Failed to register as trainer:", error);
-    } finally {
-      setIsRegistering(false);
-    }
-  };
-  
-  // Group booked courses by expiration status
-  const activeBookings = bookedCourses.filter(course => 
-    new Date(course.expiresAt) > new Date()
-  );
-  
-  const expiredBookings = bookedCourses.filter(course => 
-    new Date(course.expiresAt) <= new Date()
-  );
-
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">My Profile</h1>
+        <p className="text-muted-foreground">
+          Wallet: {displayAddress}
+        </p>
+      </div>
       
-      <main className="flex-1 pt-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-5xl mx-auto">
-            <Card className="mb-8">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">My Profile</CardTitle>
-                    <CardDescription>
-                      Manage your account and courses
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                      Wallet Address
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <code className="bg-secondary px-3 py-1 rounded text-sm flex-1 overflow-hidden text-ellipsis">
-                        {account}
-                      </code>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={copyAddress}
-                        title="Copy address"
-                      >
-                        {copied ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <Copy className="h-4 w-4" />}
-                      </Button>
+      <Tabs defaultValue="booked">
+        <TabsList className="mb-8">
+          <TabsTrigger value="booked">My Booked Courses</TabsTrigger>
+          {user?.isTrainer && (
+            <TabsTrigger value="trainer">Trainer Profile</TabsTrigger>
+          )}
+          {!user?.isTrainer && (
+            <TabsTrigger value="become-trainer">Become a Trainer</TabsTrigger>
+          )}
+        </TabsList>
+        
+        <TabsContent value="booked">
+          <div className="space-y-8">
+            <CourseGrid 
+              courses={bookedCourses} 
+              isBooked={true}
+              showBookButton={false}
+              showFilters={false}
+              emptyMessage="You haven't booked any courses yet."
+            />
+          </div>
+        </TabsContent>
+        
+        {user?.isTrainer && user.trainerProfile && (
+          <TabsContent value="trainer">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Trainer Profile</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-32 h-32 rounded-full overflow-hidden">
+                        <img 
+                          src={user.trainerProfile.avatar} 
+                          alt={user.trainerProfile.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <h3 className="text-xl font-bold">{user.trainerProfile.name}</h3>
+                      <p className="text-center text-muted-foreground">
+                        {user.trainerProfile.bio}
+                      </p>
                     </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="lg:col-span-2">
+                <h3 className="text-xl font-bold mb-4">My Courses</h3>
+                {user.trainerProfile.courses.length > 0 ? (
+                  <CourseGrid 
+                    courses={user.trainerProfile.courses} 
+                    showBookButton={false}
+                    showFilters={false}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <p className="text-muted-foreground mb-4">You haven't created any courses yet.</p>
+                      <Button onClick={() => navigate('/create-course')}>
+                        Create Your First Course
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+        )}
+        
+        {!user?.isTrainer && (
+          <TabsContent value="become-trainer">
+            <Card>
+              <CardHeader>
+                <CardTitle>Become a Trainer</CardTitle>
+                <CardDescription>
+                  Fill out the form below to register as a trainer and start creating courses.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleRegisterAsTrainer} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input 
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      placeholder="Enter your full name"
+                    />
                   </div>
                   
-                  {user?.isTrainer ? (
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                        Trainer Status
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-500 font-medium flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4" />
-                          Registered as Trainer
-                        </span>
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio</Label>
+                    <Textarea 
+                      id="bio"
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      required
+                      placeholder="Tell us about your experience, qualifications, etc."
+                      className="min-h-[120px]"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="avatar">Profile Picture URL</Label>
+                    <Input 
+                      id="avatar"
+                      value={avatar}
+                      onChange={(e) => setAvatar(e.target.value)}
+                      placeholder="https://example.com/your-image.jpg"
+                    />
+                    
+                    {avatar && (
+                      <div className="mt-2 flex justify-center">
+                        <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-200">
+                          <img 
+                            src={avatar} 
+                            alt="Profile preview" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                        Trainer Status
-                      </h3>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="flex items-center gap-2">
-                            <Edit className="h-4 w-4" />
-                            Register as Trainer
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Register as Trainer</DialogTitle>
-                            <DialogDescription>
-                              Fill out the form below to become a trainer and offer your own courses.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                              <Label htmlFor="name">Name</Label>
-                              <Input 
-                                id="name" 
-                                value={trainerName} 
-                                onChange={(e) => setTrainerName(e.target.value)} 
-                                placeholder="Your trainer name"
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="bio">Bio</Label>
-                              <Textarea 
-                                id="bio" 
-                                value={trainerBio} 
-                                onChange={(e) => setTrainerBio(e.target.value)} 
-                                placeholder="Tell us about your experience and expertise"
-                                rows={3}
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="avatar">Avatar URL</Label>
-                              <Input 
-                                id="avatar" 
-                                value={trainerAvatar} 
-                                onChange={(e) => setTrainerAvatar(e.target.value)} 
-                                placeholder="URL to your profile picture"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button 
-                              onClick={handleRegisterAsTrainer} 
-                              disabled={isRegistering}
-                            >
-                              {isRegistering ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Registering...
-                                </>
-                              ) : (
-                                "Register as Trainer"
-                              )}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Registering...
+                      </>
+                    ) : (
+                      <>Register as Trainer</>
+                    )}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
-            
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">My Bookings</h2>
-              
-              <Tabs defaultValue="active" className="w-full">
-                <TabsList className="w-full max-w-md grid grid-cols-2">
-                  <TabsTrigger value="active" className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Active Bookings
-                  </TabsTrigger>
-                  <TabsTrigger value="expired" className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Expired Bookings
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="active" className="mt-6">
-                  {activeBookings.length > 0 ? (
-                    <CourseGrid 
-                      courses={activeBookings} 
-                      isBooked={true}
-                      showBookButton={false}
-                      showFilters={false}
-                    />
-                  ) : (
-                    <div className="text-center py-12 border rounded-lg bg-secondary/30">
-                      <p className="text-muted-foreground">You don't have any active bookings.</p>
-                      <Button asChild className="mt-4">
-                        <a href="/courses">Browse Courses</a>
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="expired" className="mt-6">
-                  {expiredBookings.length > 0 ? (
-                    <div className="space-y-6">
-                      <p className="text-sm text-muted-foreground">
-                        These bookings have expired and are no longer accessible.
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {expiredBookings.map((booking: BookedCourse) => (
-                          <Card key={booking.id} className="opacity-70">
-                            <CardHeader>
-                              <CardTitle className="text-lg">{booking.title}</CardTitle>
-                              <CardDescription>
-                                Expired on {format(new Date(booking.expiresAt), 'PPP')}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-sm text-muted-foreground">
-                                <p>Sport: {booking.sportType}</p>
-                                <p>Duration: {booking.duration} days</p>
-                                <p>Price: {booking.price}</p>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 border rounded-lg bg-secondary/30">
-                      <p className="text-muted-foreground">You don't have any expired bookings.</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-        </div>
-      </main>
-      
-      <Footer />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 };
