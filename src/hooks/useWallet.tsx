@@ -9,7 +9,8 @@ export const useWallet = () => {
     disconnectWallet, 
     status, 
     user,
-    isUserLoading
+    isUserLoading,
+    isTrainer
   } = useWeb3();
 
   const isConnected = status === WalletStatus.CONNECTED;
@@ -33,6 +34,7 @@ export const useWallet = () => {
     hasError,
     displayAddress,
     user,
-    isUserLoading
+    isUserLoading,
+    isTrainer
   };
 };
