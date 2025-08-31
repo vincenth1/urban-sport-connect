@@ -63,21 +63,49 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
+    "@nomicfoundation/hardhat-ignition": "^0.15.13",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.14",
+    "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@nomicfoundation/hardhat-verify": "^2.1.1",
     "@tailwindcss/typography": "^0.5.15",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "chai": "^4.5.0",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
+    "ethers": "^6.15.0",
     "globals": "^15.9.0",
+    "hardhat": "^2.26.2",
+    "hardhat-gas-reporter": "^2.3.0",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
+    "solidity-coverage": "^0.8.16",
     "tailwindcss": "^3.4.11",
+    "typechain": "^8.3.2",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"
-  }
+  },
+  "description": "**URL**: https://lovable.dev/projects/a4db7782-3901-4b78-bd4d-417af104827d",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vincenth1/urban-sport-connect.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vincenth1/urban-sport-connect/issues"
+  },
+  "homepage": "https://github.com/vincenth1/urban-sport-connect#readme"
 }
