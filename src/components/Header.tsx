@@ -9,7 +9,8 @@ import {
   Menu, 
   X, 
   ChevronDown,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -43,12 +44,10 @@ const Header = () => {
     { label: 'Home', path: '/' },
     { label: 'Courses', path: '/courses' },
     { label: 'Profile', path: '/profile', requiresAuth: true },
-    { label: 'Trainer Dashboard', path: '/trainer-dashboard', requiresAuth: true, requiresTrainer: true },
   ];
   
   const filteredNavItems = navItems.filter(item => {
     if (item.requiresAuth && !isConnected) return false;
-    if (item.requiresTrainer && !user?.isTrainer) return false;
     return true;
   });
 
@@ -109,12 +108,14 @@ const Header = () => {
                     </DropdownMenuItem>
                   </Link>
                   {user?.isTrainer && (
-                    <Link to="/trainer-dashboard">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Trainer Dashboard</span>
-                      </DropdownMenuItem>
-                    </Link>
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link to="/profile">
+                        <div className="flex items-center">
+                          <ShieldCheck className="mr-2 h-4 w-4 text-primary" />
+                          <span>My Trainer Space</span>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 

@@ -3,8 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Course, BookedCourse } from '@/types';
-import { useCourses } from '@/hooks/useCourses';
 import { useWallet } from '@/hooks/useWallet';
+import { useCourses } from '@/hooks/useCourses';
 import { formatDistance } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -13,22 +13,28 @@ interface CourseCardProps {
   course: Course | BookedCourse;
   isBooked?: boolean;
   showBookButton?: boolean;
+  onBook?: (courseId: string) => void;
 }
 
 const CourseCard = ({ 
   course, 
   isBooked = false, 
-  showBookButton = true 
+  showBookButton = true,
+  onBook
 }: CourseCardProps) => {
-  const { bookCourse } = useCourses();
   const { isConnected } = useWallet();
+  const { bookCourse } = useCourses();
   
   // Check if the course is a booked course with expiration
   const bookedCourse = isBooked ? course as BookedCourse : null;
   
   const handleBook = () => {
     if (isConnected) {
-      bookCourse(course.id);
+      if (onBook) {
+        onBook(course.id);
+      } else {
+        bookCourse(course.id);
+      }
     }
   };
   
@@ -64,14 +70,15 @@ const CourseCard = ({
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
         
-        <div className="flex items-center text-xs text-muted-foreground gap-1">
-          <Clock className="h-3 w-3" />
-          <span>{course.duration} days</span>
-        </div>
-        
-        <div className="flex items-center text-xs text-muted-foreground gap-1">
-          <MapPin className="h-3 w-3" />
-          <span className="truncate">{course.location}</span>
+        <div className="flex items-center text-xs text-muted-foreground gap-3">
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {course.time ? new Date(course.time).toLocaleString() : `${course.duration} days`}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            <span className="truncate">{course.location}</span>
+          </span>
         </div>
         
         {bookedCourse && (

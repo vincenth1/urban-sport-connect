@@ -12,6 +12,7 @@ interface CourseGridProps {
   showBookButton?: boolean;
   emptyMessage?: string;
   showFilters?: boolean;
+  onBook?: (courseId: string) => void;
 }
 
 const CourseGrid = ({
@@ -20,7 +21,8 @@ const CourseGrid = ({
   isBooked = false,
   showBookButton = true,
   emptyMessage = "No courses found",
-  showFilters = true
+  showFilters = true,
+  onBook
 }: CourseGridProps) => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   
@@ -71,6 +73,7 @@ const CourseGrid = ({
             course={course} 
             isBooked={isBooked}
             showBookButton={showBookButton}
+            onBook={onBook}
           />
         ))}
       </div>

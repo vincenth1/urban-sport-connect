@@ -1,272 +1,123 @@
 
-// This is a mock implementation for demonstration
-// In a production app, you would use ethers.js or web3.js to interact with smart contracts
+import { ethers } from 'ethers';
 
-// Mock ABI for SportCourse NFT contract
-export const SPORT_COURSE_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_symbol",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "getOwnedCourses",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "getCreatedCourses",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "tokenURI",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "uri",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
-      }
-    ],
-    "name": "createCourse",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "bookCourse",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
+const PUBLIC_RPC_URL = import.meta.env.VITE_PUBLIC_RPC_URL as string | undefined;
+
+export const getProvider = (): ethers.BrowserProvider | ethers.JsonRpcProvider => {
+  if (PUBLIC_RPC_URL) {
+    return new ethers.JsonRpcProvider(PUBLIC_RPC_URL);
   }
+  if (!(window as any).ethereum) throw new Error('MetaMask not found');
+  return new ethers.BrowserProvider((window as any).ethereum);
+};
+
+export const getSigner = async (): Promise<ethers.Signer> => {
+  const provider = getProvider();
+  return await provider.getSigner();
+};
+
+// NFTCounter + ItemNft
+export const NFT_COUNTER_ADDRESS = import.meta.env.VITE_NFT_COUNTER_ADDRESS as string;
+
+const NFT_COUNTER_ABI = [
+  { inputs: [{ internalType: 'bytes32', name: '_hash', type: 'bytes32' }], stateMutability: 'nonpayable', type: 'constructor' },
+  { inputs: [], name: 'getTotalNFTs', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'getNFTContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }, { internalType: 'string', name: 'secret', type: 'string' }], name: 'registerNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' }
 ];
 
-// Mock contract address
-export const SPORT_COURSE_ADDRESS = "0x1234567890123456789012345678901234567890";
+const ITEM_NFT_ABI = [
+  { inputs: [{ internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'symbol', type: 'string' }, { internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'uint256', name: 'rentPrice', type: 'uint256' }], stateMutability: 'nonpayable', type: 'constructor' },
+  { inputs: [{ internalType: 'uint256', name: 'newPrice', type: 'uint256' }], name: 'changeRentPrice', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [], name: '_rentPrice', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'ownerOf', outputs: [{ internalType: 'address', name: '', type: 'address' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: '_tokenId', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'userExpires', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'userOf', outputs: [{ internalType: 'address', name: '', type: 'address' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'description', type: 'string' }, { internalType: 'string', name: 'image', type: 'string' }], name: 'setTokenMetadata', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'getTokenMetadata', outputs: [{ components: [{ internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'description', type: 'string' }, { internalType: 'string', name: 'image', type: 'string' }], internalType: 'struct ItemNft.NFTMetadata', name: '', type: 'tuple' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'uint64', name: 'expires', type: 'uint64' }], name: 'rentItem', outputs: [], stateMutability: 'payable', type: 'function' }
+];
 
-// Mock functions to interact with the contract
-export const createCourse = async (
-  uri: string,
-  price: string,
-  duration: number
-): Promise<string> => {
-  // Simulate blockchain transaction
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  return `${Math.floor(Math.random() * 1000000)}`;
+export const getNFTCounter = async () => {
+  if (!NFT_COUNTER_ADDRESS) throw new Error('VITE_NFT_COUNTER_ADDRESS not set');
+  const signer = await getSigner();
+  return new ethers.Contract(NFT_COUNTER_ADDRESS, NFT_COUNTER_ABI, signer);
 };
 
-export const bookCourse = async (
-  tokenId: string,
-  price: string
-): Promise<boolean> => {
-  // Simulate blockchain transaction
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  return true;
+export const listAllCourseContracts = async (): Promise<string[]> => {
+  const provider = getProvider();
+  const counter = new ethers.Contract(NFT_COUNTER_ADDRESS, NFT_COUNTER_ABI, provider);
+  return await counter.getNFTContracts();
 };
 
-export const getCourseDetails = async (
-  tokenId: string
-): Promise<any> => {
-  // Simulate blockchain call
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock course data
-  return {
-    uri: "ipfs://QmHash123456",
-    price: "0.05",
-    duration: 7,
-    trainer: "0x1234...5678",
-    isBooked: false,
-    bookedAt: 0,
-    expiresAt: 0
-  };
+export const getNextCourseNameAndSymbol = async () => {
+  const provider = getProvider();
+  const counter = new ethers.Contract(NFT_COUNTER_ADDRESS, NFT_COUNTER_ABI, provider);
+  const total: bigint = await counter.getTotalNFTs();
+  const nextNum = Number(total) + 1;
+  const name = `SportsCourse${nextNum}`;
+  const symbol = `SC${nextNum}`;
+  return { name, symbol };
 };
 
-// Sample Solidity contract code (not used in the app, just for reference)
-export const SPORT_COURSE_CONTRACT_CODE = `
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+export const getItemNft = async (address: string) => {
+  const provider = getProvider();
+  return new ethers.Contract(address, ITEM_NFT_ABI, provider);
+};
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+export const deployItemNft = async (params: { name: string; symbol: string; priceEth: string; tokenId?: number }) => {
+  const signer = await getSigner();
+  const tokenId = params.tokenId ?? 1;
+  const rentPriceWei = ethers.parseEther(params.priceEth);
+  // Load ABI+bytecode from artifacts path at runtime
+  const res = await fetch('/artifacts/contracts/ItemNft.sol/ItemNft.json');
+  if (!res.ok) throw new Error('Missing ItemNft artifact. Run `npx hardhat compile`.');
+  const artifact = await res.json();
+  const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, signer);
+  const contract = await factory.deploy(params.name, params.symbol, tokenId, rentPriceWei);
+  await contract.waitForDeployment();
+  return contract.target as string;
+};
 
-contract SportCourse is ERC721URIStorage, Ownable {
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
-    
-    struct Course {
-        uint256 price;
-        uint256 duration; // in days
-        address trainer;
-        bool isActive;
-    }
-    
-    struct Booking {
-        address user;
-        uint256 bookedAt;
-        uint256 expiresAt;
-    }
-    
-    mapping(uint256 => Course) public courses;
-    mapping(uint256 => Booking) public bookings;
-    mapping(address => uint256[]) public trainerCourses;
-    mapping(address => uint256[]) public userBookings;
-    
-    event CourseCreated(uint256 indexed tokenId, address indexed trainer, uint256 price, uint256 duration);
-    event CourseBooked(uint256 indexed tokenId, address indexed user, uint256 bookedAt, uint256 expiresAt);
-    event CourseExpired(uint256 indexed tokenId, address indexed user);
-    
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
-    
-    function createCourse(string memory uri, uint256 price, uint256 duration) public returns (uint256) {
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
-        
-        _safeMint(msg.sender, newTokenId);
-        _setTokenURI(newTokenId, uri);
-        
-        courses[newTokenId] = Course(price, duration, msg.sender, true);
-        trainerCourses[msg.sender].push(newTokenId);
-        
-        emit CourseCreated(newTokenId, msg.sender, price, duration);
-        
-        return newTokenId;
-    }
-    
-    function bookCourse(uint256 tokenId) public payable {
-        Course memory course = courses[tokenId];
-        require(course.isActive, "Course is not active");
-        require(course.trainer != msg.sender, "Cannot book your own course");
-        require(msg.value >= course.price, "Insufficient payment");
-        
-        uint256 expirationTime = block.timestamp + (course.duration * 1 days);
-        
-        bookings[tokenId] = Booking(msg.sender, block.timestamp, expirationTime);
-        userBookings[msg.sender].push(tokenId);
-        
-        payable(course.trainer).transfer(msg.value);
-        
-        emit CourseBooked(tokenId, msg.sender, block.timestamp, expirationTime);
-    }
-    
-    function checkExpiration(uint256 tokenId) public {
-        Booking memory booking = bookings[tokenId];
-        require(booking.user != address(0), "Course not booked");
-        
-        if (block.timestamp > booking.expiresAt) {
-            // Remove booking
-            delete bookings[tokenId];
-            
-            // Remove from user bookings (simplified, would be more complex in production)
-            emit CourseExpired(tokenId, booking.user);
-        }
-    }
-    
-    function getOwnedCourses(address user) public view returns (uint256[] memory) {
-        return userBookings[user];
-    }
-    
-    function getCreatedCourses(address trainer) public view returns (uint256[] memory) {
-        return trainerCourses[trainer];
-    }
-}
-`;
+export const setItemMetadata = async (itemAddress: string, tokenId: number, name: string, description: string, image: string) => {
+  const signer = await getSigner();
+  const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, signer);
+  const tx = await item.setTokenMetadata(tokenId, name, description, image);
+  await tx.wait();
+};
+
+export const changeItemPrice = async (itemAddress: string, newPriceEth: string) => {
+  const signer = await getSigner();
+  const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, signer);
+  const wei = ethers.parseEther(newPriceEth);
+  const tx = await item.changeRentPrice(wei);
+  await tx.wait();
+};
+
+export const registerInCounter = async (itemAddress: string, secret: string) => {
+  const counter = await getNFTCounter();
+  const tx = await counter.registerNFTContract(itemAddress, secret);
+  await tx.wait();
+};
+
+export const rentItemForFiveMinutes = async (itemAddress: string, tokenId: number, priceEth: string) => {
+  const signer = await getSigner();
+  const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, signer);
+  const now = Math.floor(Date.now() / 1000);
+  const expires = now + 5 * 60; // NOTE: 5 minutes temporary access; change as desired
+  const value = ethers.parseEther(priceEth);
+  const tx = await item.rentItem(tokenId, expires, { value });
+  await tx.wait();
+  return expires * 1000;
+};
+
+export const getRentalStatus = async (itemAddress: string, tokenId: number) => {
+  const provider = getProvider();
+  const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, provider);
+  const [user, expires] = await Promise.all([
+    item.userOf(tokenId),
+    item.userExpires(tokenId)
+  ]);
+  return { user: String(user), expires: Number(expires) * 1000 };
+};

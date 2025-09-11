@@ -9,6 +9,7 @@ export interface Course {
   sportType: SportType;
   trainer: string;
   location: string;
+  time?: string; // ISO datetime string
   tokenId?: string;
   ipfsHash?: string;
   createdAt: number;
@@ -38,6 +39,7 @@ export interface Trainer {
   bio: string;
   avatar: string;
   courses: Course[];
+  profileIpfs?: string;
 }
 
 export interface User {
@@ -63,4 +65,6 @@ export interface Web3ContextState {
   isUserLoading: boolean;
   isTrainer: boolean;
   registerAsTrainer: (name: string, bio: string, avatar: string) => Promise<void>;
+  updateTrainerProfile?: (name: string, bio: string, avatar: string) => Promise<void>;
+  appendBookedCourse?: (course: BookedCourse) => void;
 }

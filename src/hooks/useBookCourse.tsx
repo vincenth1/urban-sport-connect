@@ -2,10 +2,12 @@
 import { useState } from 'react';
 import { Course, BookedCourse } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { calculateExpirationTime } from '@/utils/courseUtils';
+import { rentItemForFiveMinutes } from '@/utils/contracts';
+import { useWeb3 } from '@/context/Web3Context';
 
 export const useBookCourse = (onCourseBooked: (course: BookedCourse) => void) => {
   const [isBooking, setIsBooking] = useState(false);
+  const { appendBookedCourse } = useWeb3();
 
   const bookCourse = async (course: Course, account: string | null) => {
     if (!account) {
@@ -19,33 +21,17 @@ export const useBookCourse = (onCourseBooked: (course: BookedCourse) => void) =>
 
     try {
       setIsBooking(true);
-      // Simulate blockchain transaction
-      toast({
-        title: "Processing",
-        description: "Your booking is being processed...",
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      if (!course) {
-        throw new Error('Course not found');
-      }
-      
+      toast({ title: 'Processing', description: 'Confirm the transaction in MetaMask...' });
+      const expiresMs = await rentItemForFiveMinutes(course.id, Number(course.tokenId || '1'), course.price);
       const now = Date.now();
-      const expirationTime = calculateExpirationTime(course.duration);
-      
       const bookedCourse: BookedCourse = {
         ...course,
         bookedAt: now,
-        expiresAt: expirationTime
+        expiresAt: expiresMs
       };
-      
       onCourseBooked(bookedCourse);
-      
-      toast({
-        title: "Booking Successful",
-        description: `You've successfully booked ${course.title}`,
-      });
+      appendBookedCourse?.(bookedCourse);
+      toast({ title: 'Booking Successful', description: `You've successfully booked ${course.title}` });
     } catch (error) {
       console.error('Failed to book course:', error);
       toast({

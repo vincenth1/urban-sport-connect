@@ -10,7 +10,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const Courses = () => {
-  const { courses, isLoading } = useCourses();
+  const { courses, isLoading, bookCourse } = useCourses();
   const { isConnected, isTrainer } = useWallet();
   const navigate = useNavigate();
   
@@ -37,6 +37,7 @@ const Courses = () => {
           courses={courses} 
           isLoading={isLoading}
           showBookButton={isConnected}
+          onBook={(id) => bookCourse(id)}
           emptyMessage="No courses available. Be the first to create one!"
         />
       </div>

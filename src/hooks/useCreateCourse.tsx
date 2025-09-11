@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Course } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { prepareCourseMetadata, uploadToIPFS } from '@/utils/ipfs';
+import { deployItemNft, setItemMetadata, registerInCounter, getNextCourseNameAndSymbol, changeItemPrice } from '@/utils/contracts';
 
 export const useCreateCourse = (onCourseCreated: (course: Course) => void) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -21,28 +23,32 @@ export const useCreateCourse = (onCourseCreated: (course: Course) => void) => {
 
     try {
       setIsCreating(true);
-      // Simulate blockchain transaction
-      toast({
-        title: "Processing",
-        description: "Your course is being created...",
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // 1) Upload metadata to IPFS
+      toast({ title: 'Processing', description: 'Uploading metadata to IPFS...' });
+      const metadata = prepareCourseMetadata({ ...newCourse, durationSeconds: 5 * 60, trainer: account });
+      const ipfsUri = await uploadToIPFS(metadata);
+
+      // 2) Deploy ItemNft (one per course)
+      toast({ title: 'Processing', description: 'Deploying course contract...' });
+      const auto = await getNextCourseNameAndSymbol();
+      const itemAddress = await deployItemNft({ name: auto.name, symbol: auto.symbol, priceEth: newCourse.price });
+
+      // 3) Set token metadata (store IPFS uri in image field for richer fetch later)
+      await setItemMetadata(itemAddress, 1, newCourse.title, newCourse.description, ipfsUri);
+
+      // 4) Register in NFTCounter using secret from env
+      await registerInCounter(itemAddress, import.meta.env.VITE_SECRET);
+
       const course: Course = {
         ...newCourse,
-        id: Date.now().toString(),
+        id: itemAddress,
+        tokenId: '1',
+        ipfsHash: ipfsUri,
         trainer: account,
         createdAt: Date.now()
       };
-      
       onCourseCreated(course);
-      
-      toast({
-        title: "Course Created",
-        description: `${newCourse.title} has been created successfully`,
-      });
-      
+      toast({ title: 'Course Created', description: `${newCourse.title} has been created successfully` });
       return course;
     } catch (error) {
       console.error('Failed to create course:', error);

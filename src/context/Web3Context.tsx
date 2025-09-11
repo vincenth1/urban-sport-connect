@@ -1,15 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { WalletStatus, User, Web3ContextState } from '@/types';
+import { WalletStatus, User, Web3ContextState, Trainer, BookedCourse } from '@/types';
+import { uploadToIPFS } from '@/utils/ipfs';
 import { toast } from '@/components/ui/use-toast';
-
-// Mock data - in real implementation, this would interact with actual wallet providers 
-// and smart contracts
-const mockUser: User = {
-  address: '0x1234...5678',
-  bookedCourses: [],
-  isTrainer: false
-};
+import { getProvider } from '@/utils/contracts';
 
 const defaultContextValue: Web3ContextState = {
   account: null,
@@ -40,56 +34,56 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        // In a real implementation, check if a wallet is already connected
-        const isConnected = localStorage.getItem('walletConnected') === 'true';
-        
-        if (isConnected) {
-          // For demo purposes, use mock data
-          setStatus(WalletStatus.CONNECTED);
-          setAccount(mockUser.address);
-          setUser(mockUser);
+        if ((window as any).ethereum) {
+          const provider = getProvider();
+          const accounts = await provider.listAccounts();
+          if (accounts && accounts.length > 0) {
+            const addr = accounts[0].address;
+            setAccount(addr);
+            setStatus(WalletStatus.CONNECTED);
+            const isTrainerFlag = localStorage.getItem(`isTrainer:${addr}`) === 'true';
+            const storedProfileRaw = localStorage.getItem(`trainerProfile:${addr}`);
+            const storedProfile = storedProfileRaw ? JSON.parse(storedProfileRaw) : undefined;
+            const storedBookedRaw = localStorage.getItem(`booked:${addr}`);
+            const storedBooked = storedBookedRaw ? JSON.parse(storedBookedRaw) : [];
+            const base: User = { address: addr, bookedCourses: storedBooked, isTrainer: isTrainerFlag, trainerProfile: storedProfile };
+            setUser(base);
+          }
         }
       } catch (error) {
         console.error('Failed to check wallet connection:', error);
         setStatus(WalletStatus.ERROR);
       }
     };
-
     checkConnection();
   }, []);
 
   const connectWallet = async () => {
     try {
+      if (!(window as any).ethereum) {
+        toast({ title: 'MetaMask Required', description: 'Please install MetaMask', variant: 'destructive' });
+        return;
+      }
       setStatus(WalletStatus.CONNECTING);
-      
-      // Simulate wallet connection
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real implementation, this would connect to MetaMask or another wallet
-      setAccount(mockUser.address);
+      const provider = getProvider();
+      const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+      const addr = accounts[0];
+      setAccount(addr);
       setStatus(WalletStatus.CONNECTED);
-      
-      // Load user data
       setIsUserLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setUser(mockUser);
+      const isTrainerFlag = localStorage.getItem(`isTrainer:${addr}`) === 'true';
+      const storedProfileRaw = localStorage.getItem(`trainerProfile:${addr}`);
+      const storedProfile = storedProfileRaw ? JSON.parse(storedProfileRaw) : undefined;
+      const storedBookedRaw = localStorage.getItem(`booked:${addr}`);
+      const storedBooked = storedBookedRaw ? JSON.parse(storedBookedRaw) : [];
+      const base: User = { address: addr, bookedCourses: storedBooked, isTrainer: isTrainerFlag, trainerProfile: storedProfile };
+      setUser(base);
       setIsUserLoading(false);
-      
-      localStorage.setItem('walletConnected', 'true');
-      
-      toast({
-        title: "Wallet Connected",
-        description: `Connected to ${mockUser.address}`,
-      });
+      toast({ title: 'Wallet Connected', description: `Connected to ${addr}` });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       setStatus(WalletStatus.ERROR);
-      
-      toast({
-        title: "Connection Failed",
-        description: "Failed to connect to wallet",
-        variant: "destructive",
-      });
+      toast({ title: 'Connection Failed', description: 'Failed to connect to wallet', variant: 'destructive' });
     }
   };
 
@@ -107,39 +101,59 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
   const registerAsTrainer = async (name: string, bio: string, avatar: string) => {
     try {
-      // In a real implementation, this would call a smart contract function
+      if (!account) throw new Error('No account');
       setIsUserLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const updatedUser: User = {
-        ...mockUser,
-        isTrainer: true,
-        trainerProfile: {
-          address: mockUser.address,
-          name,
-          bio,
-          avatar,
-          courses: []
-        }
-      };
-      
-      setUser(updatedUser);
-      setIsUserLoading(false);
-      
-      toast({
-        title: "Registration Successful",
-        description: "You are now registered as a trainer!",
-      });
+      // Client-side trainer flag (no on-chain registry in ItemNft/NFTCounter flow)
+      localStorage.setItem(`isTrainer:${account}`, 'true');
+      const profile: Trainer = { address: account, name, bio, avatar, courses: [] };
+      try {
+        const profileIpfs = await uploadToIPFS({ address: account, name, bio, avatar });
+        profile.profileIpfs = profileIpfs;
+      } catch (e) {
+        console.warn('Failed to upload trainer profile to IPFS, falling back to local only', e);
+      }
+      localStorage.setItem(`trainerProfile:${account}`, JSON.stringify(profile));
+      setUser(prev => prev ? { ...prev, isTrainer: true, trainerProfile: profile } : prev);
+      toast({ title: 'Registration Successful', description: 'You are now registered as a trainer!' });
     } catch (error) {
       console.error('Failed to register as trainer:', error);
+      toast({ title: 'Registration Failed', description: 'Failed to register as trainer', variant: 'destructive' });
+    } finally {
       setIsUserLoading(false);
-      
-      toast({
-        title: "Registration Failed",
-        description: "Failed to register as trainer",
-        variant: "destructive",
-      });
     }
+  };
+
+  const updateTrainerProfile = async (name: string, bio: string, avatar: string) => {
+    try {
+      if (!account) throw new Error('No account');
+      setIsUserLoading(true);
+      const profile: Trainer = { address: account, name, bio, avatar, courses: [], profileIpfs: undefined };
+      try {
+        const profileIpfs = await uploadToIPFS({ address: account, name, bio, avatar });
+        profile.profileIpfs = profileIpfs;
+      } catch (e) {
+        console.warn('Failed to upload trainer profile to IPFS');
+      }
+      localStorage.setItem(`trainerProfile:${account}`, JSON.stringify(profile));
+      setUser(prev => prev ? { ...prev, trainerProfile: profile, isTrainer: true } : prev);
+      toast({ title: 'Profile Updated', description: 'Your trainer profile has been updated.' });
+    } catch (e) {
+      console.error('Failed to update trainer profile', e);
+      toast({ title: 'Update Failed', description: 'Could not update trainer profile', variant: 'destructive' });
+    } finally {
+      setIsUserLoading(false);
+    }
+  };
+
+  const appendBookedCourse = (course: BookedCourse) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, bookedCourses: [...(prev.bookedCourses || []), course] } as User;
+      try {
+        localStorage.setItem(`booked:${prev.address}`, JSON.stringify(next.bookedCourses));
+      } catch {}
+      return next;
+    });
   };
 
   return (
@@ -153,6 +167,8 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
         isUserLoading,
         isTrainer: user?.isTrainer || false,
         registerAsTrainer,
+        updateTrainerProfile,
+        appendBookedCourse,
       }}
     >
       {children}

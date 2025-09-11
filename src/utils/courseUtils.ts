@@ -11,8 +11,5 @@ export const filterExpiredCourses = (bookedCourses: BookedCourse[]): BookedCours
   return bookedCourses.filter(course => !isCourseExpired(course));
 };
 
-// Calculate expiration time based on course duration
-export const calculateExpirationTime = (courseDuration: number): number => {
-  const now = Date.now();
-  return now + (courseDuration * 24 * 60 * 60 * 1000); // Convert days to milliseconds
-};
+// Note: Expiration is enforced on-chain via ERC-4907's userExpires.
+// The UI uses the on-chain value returned by scGetCourseInfo().
