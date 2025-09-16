@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Course, BookedCourse } from '@/types';
 import { useWallet } from '@/hooks/useWallet';
 import { useCourses } from '@/hooks/useCourses';
+import { getItemNft } from '@/utils/contracts';
 import { formatDistance } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface CourseCardProps {
   course: Course | BookedCourse;
@@ -37,12 +39,43 @@ const CourseCard = ({
       }
     }
   };
+
+  const [capacityInfo, setCapacityInfo] = React.useState<{ ok: boolean; reason?: string }>({ ok: true });
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const end = (course as any).timeEnd as string | undefined;
+        if (!end) { if (mounted) setCapacityInfo({ ok: false, reason: 'Course is not scheduled' }); return; }
+        const endMs = Date.parse(end);
+        if (Number.isNaN(endMs) || endMs <= Date.now()) { if (mounted) setCapacityInfo({ ok: false, reason: 'Course has ended' }); return; }
+        const item = await getItemNft(course.id);
+        const [active, cap] = await Promise.all([
+          item.activeRenterCount(Number(course.tokenId || '1')),
+          item.capacity(Number(course.tokenId || '1')),
+        ]);
+        if (!mounted) return;
+        if (Number(active) >= Number(cap)) setCapacityInfo({ ok: false, reason: 'Capacity reached' });
+        else setCapacityInfo({ ok: true });
+      } catch {
+        if (mounted) setCapacityInfo({ ok: true });
+      }
+    })();
+    return () => { mounted = false; };
+  }, [course.id, course.tokenId, (course as any).timeEnd]);
+
+  const canBook = capacityInfo.ok;
   
   const getTimeRemaining = (expiresAt: number) => {
     const now = Date.now();
     if (now > expiresAt) return 'Expired';
-    
-    return formatDistance(new Date(expiresAt), new Date(), { addSuffix: true });
+    const totalMs = expiresAt - now;
+    const seconds = Math.floor((totalMs / 1000) % 60);
+    const minutes = Math.floor((totalMs / 1000 / 60) % 60);
+    const hours = Math.floor((totalMs / (1000 * 60 * 60)) % 24);
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
   };
 
   return (
@@ -73,7 +106,9 @@ const CourseCard = ({
         <div className="flex items-center text-xs text-muted-foreground gap-3">
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {course.time ? new Date(course.time).toLocaleString() : `${course.duration} days`}
+            {course.timeStart && course.timeEnd
+              ? `${new Date(course.timeStart).toLocaleString()} - ${new Date(course.timeEnd).toLocaleString()}`
+              : (course.time ? new Date(course.time).toLocaleString() : `${course.duration} days`)}
           </span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3 w-3" />
@@ -82,14 +117,7 @@ const CourseCard = ({
         </div>
         
         {bookedCourse && (
-          <div className="mt-2 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Expires:</span>
-              <span className="font-medium">
-                {getTimeRemaining(bookedCourse.expiresAt)}
-              </span>
-            </div>
-          </div>
+          <Countdown expiresAt={bookedCourse.expiresAt} />
         )}
       </CardContent>
       
@@ -99,19 +127,57 @@ const CourseCard = ({
             <span className="text-sm text-primary font-medium">Already booked</span>
           </div>
         ) : (
-          showBookButton && (
-            <Button 
-              className="w-full"
-              variant="default"
-              onClick={handleBook}
-              disabled={!isConnected}
-            >
-              Book Course
-            </Button>
-          )
+          showBookButton && (() => {
+            const disabled = !isConnected || !canBook;
+            const tooltipText = !isConnected
+              ? 'Connect your wallet to book this course'
+              : (!capacityInfo.ok ? (capacityInfo.reason || 'Unavailable') : '');
+            const button = (
+              <Button 
+                className="w-full"
+                variant="default"
+                onClick={handleBook}
+                disabled={disabled}
+              >
+                {canBook ? 'Book Course' : 'Unavailable'}
+              </Button>
+            );
+            return disabled ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="w-full">{button}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>{tooltipText}</span>
+                </TooltipContent>
+              </Tooltip>
+            ) : button;
+          })()
         )}
       </CardFooter>
     </Card>
+  );
+};
+
+const Countdown = ({ expiresAt }: { expiresAt: number }) => {
+  const [, force] = React.useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => force((x) => x + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const now = Date.now();
+  const remaining = Math.max(0, expiresAt - now);
+  const seconds = Math.floor((remaining / 1000) % 60);
+  const minutes = Math.floor((remaining / 1000 / 60) % 60);
+  const hours = Math.floor((remaining / (1000 * 60 * 60)) % 24);
+  const text = remaining <= 0 ? 'Expired' : `${hours > 0 ? hours + 'h ' : ''}${minutes}m ${seconds}s`;
+  return (
+    <div className="mt-2 text-sm">
+      <div className="flex justify-between items-center">
+        <span className="text-muted-foreground">Expires:</span>
+        <span className="font-medium">{text}</span>
+      </div>
+    </div>
   );
 };
 

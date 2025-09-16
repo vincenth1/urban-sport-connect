@@ -9,7 +9,9 @@ export interface Course {
   sportType: SportType;
   trainer: string;
   location: string;
-  time?: string; // ISO datetime string
+  time?: string; // legacy single time
+  timeStart?: string; // ISO datetime string
+  timeEnd?: string;   // ISO datetime string
   tokenId?: string;
   ipfsHash?: string;
   createdAt: number;

@@ -25,6 +25,8 @@ const CreateCourse = () => {
   const [sportType, setSportType] = useState<SportType>(SportType.YOGA);
   const [location, setLocation] = useState('');
   const [time, setTime] = useState('');
+  const [timeStart, setTimeStart] = useState('');
+  const [timeEnd, setTimeEnd] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +42,9 @@ const CreateCourse = () => {
         duration: parseInt(duration),
         sportType,
         location,
-        time
+        time,
+        timeStart,
+        timeEnd
       };
       
       const createdCourse = await createCourse(newCourse);
@@ -200,6 +204,24 @@ const CreateCourse = () => {
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     placeholder="e.g., 2025-09-15T18:00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timeStart">Time Start</Label>
+                  <Input 
+                    id="timeStart"
+                    type="datetime-local"
+                    value={timeStart}
+                    onChange={(e) => setTimeStart(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timeEnd">Time End</Label>
+                  <Input 
+                    id="timeEnd"
+                    type="datetime-local"
+                    value={timeEnd}
+                    onChange={(e) => setTimeEnd(e.target.value)}
                   />
                 </div>
               </div>

@@ -31,7 +31,7 @@ export const useCreateCourse = (onCourseCreated: (course: Course) => void) => {
       // 2) Deploy ItemNft (one per course)
       toast({ title: 'Processing', description: 'Deploying course contract...' });
       const auto = await getNextCourseNameAndSymbol();
-      const itemAddress = await deployItemNft({ name: auto.name, symbol: auto.symbol, priceEth: newCourse.price });
+      const itemAddress = await deployItemNft({ name: auto.name, symbol: auto.symbol, priceEth: newCourse.price, capacity: newCourse.capacity ?? 1 });
 
       // 3) Set token metadata (store IPFS uri in image field for richer fetch later)
       await setItemMetadata(itemAddress, 1, newCourse.title, newCourse.description, ipfsUri);

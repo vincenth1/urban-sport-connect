@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Course, BookedCourse } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { rentItemForFiveMinutes } from '@/utils/contracts';
+import { rentItemForWindow } from '@/utils/contracts';
 import { useWeb3 } from '@/context/Web3Context';
 
 export const useBookCourse = (onCourseBooked: (course: BookedCourse) => void) => {
@@ -22,7 +22,9 @@ export const useBookCourse = (onCourseBooked: (course: BookedCourse) => void) =>
     try {
       setIsBooking(true);
       toast({ title: 'Processing', description: 'Confirm the transaction in MetaMask...' });
-      const expiresMs = await rentItemForFiveMinutes(course.id, Number(course.tokenId || '1'), course.price);
+      // Use course.timeEnd if available; otherwise fallback to a short window
+      const endMs = course.timeEnd ? Date.parse(course.timeEnd) : (Date.now() + 5 * 60 * 1000);
+      const expiresMs = await rentItemForWindow(course.id, Number(course.tokenId || '1'), course.price, endMs);
       const now = Date.now();
       const bookedCourse: BookedCourse = {
         ...course,

@@ -22,7 +22,9 @@ export const useEditCourse = (onCourseUpdated: (course: Partial<Course> & { id: 
       const attributes: any[] = [];
       if (updates.price) attributes.push({ trait_type: 'Price', value: updates.price });
       if (updates.location) attributes.push({ trait_type: 'Location', value: updates.location });
-      if (updates.time) attributes.push({ trait_type: 'Time', value: updates.time });
+      if ((updates as any).time) attributes.push({ trait_type: 'Time', value: (updates as any).time });
+      if ((updates as any).timeStart) attributes.push({ trait_type: 'TimeStart', value: (updates as any).timeStart });
+      if ((updates as any).timeEnd) attributes.push({ trait_type: 'TimeEnd', value: (updates as any).timeEnd });
       if (updates.sportType) attributes.push({ trait_type: 'Sport Type', value: updates.sportType as SportType });
       if (attributes.length) meta.attributes = attributes;
       const ipfsUri = await uploadToIPFS(meta);

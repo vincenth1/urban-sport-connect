@@ -57,10 +57,12 @@ export const prepareCourseMetadata = (courseData: any) => {
     image: courseData.image,
     attributes: [
       { trait_type: "Price", value: courseData.price },
-      { trait_type: "DurationSeconds", value: courseData.durationSeconds },
+      { trait_type: "DurationSeconds", value: courseData.durationSeconds }, // optional
       { trait_type: "Sport Type", value: courseData.sportType },
       { trait_type: "Location", value: courseData.location },
-      { trait_type: "Time", value: courseData.time || '' },
+      { trait_type: "Time", value: courseData.time || '' }, // legacy
+      { trait_type: "TimeStart", value: courseData.timeStart || '' },
+      { trait_type: "TimeEnd", value: courseData.timeEnd || '' },
       { trait_type: "Trainer", value: courseData.trainer }
     ]
   };
