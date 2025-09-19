@@ -168,4 +168,21 @@ contract ItemNft is ERC4907, Ownable {
     function contractBalance() external view returns (uint256) {
         return address(this).balance;
     }
+
+    //#####################################################################
+    // Burn NFT - only owner can burn their own NFT
+    //#####################################################################
+    function burn(uint256 tokenId) external {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(_ownerOf(tokenId) == msg.sender, "Only owner can burn");
+        _burn(tokenId);
+        // Clear metadata
+        delete _tokenMetadata[tokenId];
+        // Clear capacity
+        delete capacity[tokenId];
+        // Clear active count
+        _activeCount[tokenId] = 0;
+        // Note: Mappings _renters and _renterExpires cannot be deleted entirely in Solidity
+        // They will be effectively cleared when the contract is destroyed
+    }
 }

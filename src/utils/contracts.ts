@@ -23,7 +23,8 @@ const NFT_COUNTER_ABI = [
   { inputs: [{ internalType: 'bytes32', name: '_hash', type: 'bytes32' }], stateMutability: 'nonpayable', type: 'constructor' },
   { inputs: [], name: 'getTotalNFTs', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
   { inputs: [], name: 'getNFTContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
-  { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }, { internalType: 'string', name: 'secret', type: 'string' }], name: 'registerNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' }
+  { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }, { internalType: 'string', name: 'secret', type: 'string' }], name: 'registerNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }, { internalType: 'string', name: 'secret', type: 'string' }], name: 'removeNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' }
 ];
 
 const ITEM_NFT_ABI = [
@@ -44,7 +45,8 @@ const ITEM_NFT_ABI = [
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'address', name: 'renter', type: 'address' }], name: 'renterExpires', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'description', type: 'string' }, { internalType: 'string', name: 'image', type: 'string' }], name: 'setTokenMetadata', outputs: [], stateMutability: 'nonpayable', type: 'function' },
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'getTokenMetadata', outputs: [{ components: [{ internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'description', type: 'string' }, { internalType: 'string', name: 'image', type: 'string' }], internalType: 'struct ItemNft.NFTMetadata', name: '', type: 'tuple' }], stateMutability: 'view', type: 'function' },
-  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'uint64', name: 'expires', type: 'uint64' }], name: 'rentItem', outputs: [], stateMutability: 'payable', type: 'function' }
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'uint64', name: 'expires', type: 'uint64' }], name: 'rentItem', outputs: [], stateMutability: 'payable', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'burn', outputs: [], stateMutability: 'nonpayable', type: 'function' }
 ];
 
 export const getNFTCounter = async () => {
@@ -109,6 +111,12 @@ export const registerInCounter = async (itemAddress: string, secret: string) => 
   await tx.wait();
 };
 
+export const removeFromCounter = async (itemAddress: string, secret: string) => {
+  const counter = await getNFTCounter();
+  const tx = await counter.removeNFTContract(itemAddress, secret);
+  await tx.wait();
+};
+
 export const rentItemForWindow = async (
   itemAddress: string,
   tokenId: number,
@@ -134,4 +142,11 @@ export const getRentalStatus = async (itemAddress: string, tokenId: number, acco
     item.renterExpires(tokenId, account)
   ]);
   return { user: active ? account : ethers.ZeroAddress, expires: Number(expires) * 1000 };
+};
+
+export const burnItemNft = async (itemAddress: string, tokenId: number) => {
+  const signer = await getSigner();
+  const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, signer);
+  const tx = await item.burn(tokenId);
+  await tx.wait();
 };

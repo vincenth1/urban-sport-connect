@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Course, SportType, BookedCourse } from '@/types';
+import { SportType as SportTypeEnum } from '@/types';
 import { useWeb3 } from '@/context/Web3Context';
 import { toast } from '@/components/ui/use-toast';
 import { filterExpiredCourses } from '@/utils/courseUtils';
@@ -39,7 +40,17 @@ export const useCourses = () => {
                 item._rentPrice(),
               ]);
 
-              let enriched = { name: meta.name, description: meta.description, image: meta.image } as any;
+              let enriched = {
+                name: meta.name,
+                description: meta.description,
+                image: meta.image,
+                timeStart: undefined,
+                timeEnd: undefined,
+                location: '',
+                sportType: SportTypeEnum.OTHER,
+                capacity: undefined
+              } as any;
+
               try {
                 if (typeof meta.image === 'string' && meta.image.startsWith('ipfs://')) {
                   const ipfsData = await fetchFromIPFSMemo(meta.image);
@@ -47,13 +58,26 @@ export const useCourses = () => {
                     name: ipfsData.name || meta.name,
                     description: ipfsData.description || meta.description,
                     image: ipfsData.image || meta.image,
+                    timeStart: ipfsData.timeStart,
+                    timeEnd: ipfsData.timeEnd,
+                    location: ipfsData.location || '',
+                    sportType: ipfsData.sportType || SportTypeEnum.OTHER,
+                    capacity: ipfsData.capacity
                   };
+                  // Skip if course is marked as deleted
+                  if (enriched.name === '[DELETED COURSE]' || enriched.description === 'This course has been deleted by the trainer') {
+                    return null;
+                  }
                 }
               } catch (e) {
                 console.warn('IPFS fetch failed for', addr, e);
               }
 
               const trainer = await item.ownerOf(Number(tokenId));
+              // Skip if NFT is burned (trainer is zero address)
+              if (trainer === '0x0000000000000000000000000000000000000000') {
+                return null;
+              }
               const course: Course = {
                 id: addr,
                 tokenId: tokenId.toString(),
@@ -62,10 +86,12 @@ export const useCourses = () => {
                 description: enriched.description,
                 image: enriched.image,
                 price: (Number(priceWei) / 1e18).toString(),
-                duration: 0,
-                sportType: 'Other',
+                sportType: enriched.sportType,
                 trainer,
-                location: '',
+                location: enriched.location,
+                timeStart: enriched.timeStart,
+                timeEnd: enriched.timeEnd,
+                capacity: enriched.capacity,
                 createdAt: Date.now()
               };
               return course;
@@ -134,7 +160,7 @@ export const useCourses = () => {
       const updated: BookedCourse[] = [];
       for (const b of prev) {
         try {
-          const status = await getRentalStatus(b.id, Number(b.tokenId || '1'));
+          const status = await getRentalStatus(b.id, Number(b.tokenId || '1'), account || '');
           const isStillUser = status.user.toLowerCase() === (account || '').toLowerCase();
           const stillValid = Date.now() < status.expires;
           if (isStillUser && stillValid) {
@@ -170,6 +196,11 @@ export const useCourses = () => {
     setCourses(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated } as Course : c)));
   };
 
+  // Remove a course from local state
+  const removeCourseFromState = (courseId: string) => {
+    setCourses(prev => prev.filter(c => c.id !== courseId));
+  };
+
   // Filter courses by type
   const filterCoursesByType = (type: SportType | 'all') => {
     if (type === 'all') {
@@ -195,6 +226,7 @@ export const useCourses = () => {
       return createCourse(newCourse, account);
     },
     filterCoursesByType,
-    updateCourseInState
+    updateCourseInState,
+    removeCourseFromState
   };
 };

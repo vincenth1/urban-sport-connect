@@ -60,4 +60,35 @@ contract NFTCounter {
     function getNFTContracts() external view returns (address[] memory) {
         return _nftContracts[secretHash].nftContracts;
     }
+
+    //#####################################################################
+    // Remove a contract from registry (for deletion)
+    //#####################################################################
+    function removeNFTContract(address nftContractAddress, string memory secret) external {
+        bytes32 secretHashComputed = keccak256(abi.encodePacked(secret));
+        require(secretHashComputed == secretHash, "Unauthorized");
+        require(
+            _nftContracts[secretHashComputed].isRegistered[nftContractAddress],
+            "Contract not registered"
+        );
+
+        // Remove from registered mapping
+        _nftContracts[secretHashComputed].isRegistered[nftContractAddress] = false;
+
+        // Remove from array (swap with last and pop)
+        address[] storage contracts = _nftContracts[secretHashComputed].nftContracts;
+        for (uint256 i = 0; i < contracts.length; i++) {
+            if (contracts[i] == nftContractAddress) {
+                contracts[i] = contracts[contracts.length - 1];
+                contracts.pop();
+                break;
+            }
+        }
+
+        // Decrease count
+        _nftContracts[secretHashComputed].count--;
+
+        // Remove from createdBySender mapping
+        delete _nftContracts[secretHashComputed].createdBySender[nftContractAddress];
+    }
 }

@@ -108,16 +108,26 @@ const CourseCard = ({
             <Clock className="h-3 w-3" />
             {course.timeStart && course.timeEnd
               ? `${new Date(course.timeStart).toLocaleString()} - ${new Date(course.timeEnd).toLocaleString()}`
-              : (course.time ? new Date(course.time).toLocaleString() : `${course.duration} days`)}
+              : ((course as any).time ? new Date((course as any).time).toLocaleString() : ((course as any).duration ? `${(course as any).duration} days` : 'Time not specified'))}
           </span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3 w-3" />
             <span className="truncate">{course.location}</span>
           </span>
         </div>
+
+        {bookedCourse && course.timeStart && course.timeEnd && (
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+            <div className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>Course Schedule:</strong> {new Date(course.timeStart).toLocaleString()} - {new Date(course.timeEnd).toLocaleString()}
+            </div>
+          </div>
+        )}
         
         {bookedCourse && (
-          <Countdown expiresAt={bookedCourse.expiresAt} />
+          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-md">
+            <Countdown expiresAt={bookedCourse.expiresAt} />
+          </div>
         )}
       </CardContent>
       
@@ -170,12 +180,28 @@ const Countdown = ({ expiresAt }: { expiresAt: number }) => {
   const seconds = Math.floor((remaining / 1000) % 60);
   const minutes = Math.floor((remaining / 1000 / 60) % 60);
   const hours = Math.floor((remaining / (1000 * 60 * 60)) % 24);
-  const text = remaining <= 0 ? 'Expired' : `${hours > 0 ? hours + 'h ' : ''}${minutes}m ${seconds}s`;
+  const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+
+  let text = 'Expired';
+  if (remaining > 0) {
+    if (days > 0) {
+      text = `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      text = `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      text = `${minutes}m ${seconds}s`;
+    } else {
+      text = `${seconds}s`;
+    }
+  }
+
   return (
-    <div className="mt-2 text-sm">
+    <div className="text-sm">
       <div className="flex justify-between items-center">
-        <span className="text-muted-foreground">Expires:</span>
-        <span className="font-medium">{text}</span>
+        <span className="text-green-700 dark:text-green-300 font-medium">Course Access:</span>
+        <span className={`font-bold ${remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
+          {text}
+        </span>
       </div>
     </div>
   );

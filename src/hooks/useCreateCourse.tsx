@@ -25,7 +25,7 @@ export const useCreateCourse = (onCourseCreated: (course: Course) => void) => {
       setIsCreating(true);
       // 1) Upload metadata to IPFS
       toast({ title: 'Processing', description: 'Uploading metadata to IPFS...' });
-      const metadata = prepareCourseMetadata({ ...newCourse, durationSeconds: 5 * 60, trainer: account });
+      const metadata = prepareCourseMetadata({ ...newCourse, trainer: account });
       const ipfsUri = await uploadToIPFS(metadata);
 
       // 2) Deploy ItemNft (one per course)

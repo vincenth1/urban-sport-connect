@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, AlertCircle } from 'lucide-react';
+import Header from '@/components/Header';
 
 const CreateCourse = () => {
   const { isConnected, isTrainer } = useWallet();
@@ -21,34 +22,87 @@ const CreateCourse = () => {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
-  const [duration, setDuration] = useState('7');
   const [sportType, setSportType] = useState<SportType>(SportType.YOGA);
   const [location, setLocation] = useState('');
-  const [time, setTime] = useState('');
-  const [timeStart, setTimeStart] = useState('');
-  const [timeEnd, setTimeEnd] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [capacity, setCapacity] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Combine date and time into datetime strings
+  const timeStart = startDate && startTime ? `${startDate}T${startTime}` : '';
+  const timeEnd = endDate && endTime ? `${endDate}T${endTime}` : '';
+
+  // Update end date/time when start date/time changes
+  const handleStartDateChange = (value: string) => {
+    setStartDate(value);
+    if (endDate && new Date(value) > new Date(endDate)) {
+      setEndDate(''); // Reset end date if it's now invalid
+      setEndTime('');
+    }
+  };
+
+  const handleStartTimeChange = (value: string) => {
+    setStartTime(value);
+    // If end date is same as start date and end time is before start time, reset end time
+    if (endDate === startDate && endTime && value >= endTime) {
+      setEndTime('');
+    }
+  };
+
+  const handleEndDateChange = (value: string) => {
+    setEndDate(value);
+    // If end date is same as start date and end time is before start time, reset end time
+    if (value === startDate && endTime && startTime && endTime <= startTime) {
+      setEndTime('');
+    }
+  };
+
+  const handleEndTimeChange = (value: string) => {
+    setEndTime(value);
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate date and time inputs
+    if (!startDate || !startTime || !endDate || !endTime) {
+      alert('Please select both start and end date and time');
+      return;
+    }
+
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+
+    if (startDateTime >= endDateTime) {
+      alert('End time must be after start time');
+      return;
+    }
+
+    if (startDateTime <= new Date()) {
+      alert('Start time must be in the future');
+      return;
+    }
+
     setIsSubmitting(true);
-    
+
     try {
       const newCourse = {
         title,
         description,
         price,
         image,
-        duration: parseInt(duration),
         sportType,
         location,
-        time,
-        timeStart,
-        timeEnd
+        timeStart: timeStart,
+        timeEnd: timeEnd,
+        capacity: capacity ? parseInt(capacity) : undefined
       };
-      
+
       const createdCourse = await createCourse(newCourse);
-      
+
       if (createdCourse) {
         setTimeout(() => {
           navigate('/profile');
@@ -96,7 +150,9 @@ const CreateCourse = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <Header />
+      <div className="container mx-auto px-4 py-8 pt-24">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Create New Course</h1>
         <p className="text-muted-foreground">
@@ -137,30 +193,27 @@ const CreateCourse = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (in ETH)</Label>
-                  <Input 
-                    id="price"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                    placeholder="e.g., 0.05 ETH"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (in days)</Label>
-                  <Input 
-                    id="duration"
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Price (in ETH)</Label>
+                <Input
+                  id="price"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                  placeholder="e.g., 0.05 ETH"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacity (optional)</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                  placeholder="e.g., 10 (leave empty for unlimited)"
+                  min="0"
+                />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -195,35 +248,93 @@ const CreateCourse = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="time">Time</Label>
-                  <Input 
-                    id="time"
-                    type="datetime-local"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    placeholder="e.g., 2025-09-15T18:00"
-                  />
+              <div className="space-y-8">
+                <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                  <Label className="text-base font-medium text-blue-900 dark:text-blue-100">🕐 Course Start Time</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate" className="text-sm font-medium">📅 Date</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => handleStartDateChange(e.target.value)}
+                        required
+                        min={new Date().toISOString().split('T')[0]}
+                        className="cursor-pointer"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="startTime" className="text-sm font-medium">⏰ Time</Label>
+                      <Input
+                        id="startTime"
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => handleStartTimeChange(e.target.value)}
+                        required
+                        className="cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                    📝 Select the date and time when your course begins
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeStart">Time Start</Label>
-                  <Input 
-                    id="timeStart"
-                    type="datetime-local"
-                    value={timeStart}
-                    onChange={(e) => setTimeStart(e.target.value)}
-                  />
+
+                <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-900/20">
+                  <Label className="text-base font-medium text-green-900 dark:text-green-100">🕐 Course End Time</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate" className="text-sm font-medium">📅 Date</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => handleEndDateChange(e.target.value)}
+                        required
+                        min={startDate || new Date().toISOString().split('T')[0]}
+                        className="cursor-pointer"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endTime" className="text-sm font-medium">⏰ Time</Label>
+                      <Input
+                        id="endTime"
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => handleEndTimeChange(e.target.value)}
+                        required
+                        className="cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+                    📝 Select the date and time when your course ends
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeEnd">Time End</Label>
-                  <Input 
-                    id="timeEnd"
-                    type="datetime-local"
-                    value={timeEnd}
-                    onChange={(e) => setTimeEnd(e.target.value)}
-                  />
-                </div>
+
+                {(timeStart || timeEnd) && (
+                  <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                    <Label className="text-base font-medium text-purple-900 dark:text-purple-100">📋 Time Preview</Label>
+                    <div className="mt-2 space-y-1">
+                      {timeStart && (
+                        <p className="text-sm text-purple-800 dark:text-purple-200">
+                          🟢 <strong>Starts:</strong> {new Date(timeStart).toLocaleString()}
+                        </p>
+                      )}
+                      {timeEnd && (
+                        <p className="text-sm text-purple-800 dark:text-purple-200">
+                          🔴 <strong>Ends:</strong> {new Date(timeEnd).toLocaleString()}
+                        </p>
+                      )}
+                      {timeStart && timeEnd && (
+                        <p className="text-sm text-purple-800 dark:text-purple-200">
+                          ⏱️ <strong>Duration:</strong> {Math.round((new Date(timeEnd).getTime() - new Date(timeStart).getTime()) / (1000 * 60 * 60))} hours
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -273,6 +384,7 @@ const CreateCourse = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

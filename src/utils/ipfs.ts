@@ -51,19 +51,24 @@ export const fetchFromIPFSMemo = async (uri: string): Promise<any> => {
 };
 
 export const prepareCourseMetadata = (courseData: any) => {
-  return {
-    name: courseData.title,
-    description: courseData.description,
-    image: courseData.image,
-    attributes: [
-      { trait_type: "Price", value: courseData.price },
-      { trait_type: "DurationSeconds", value: courseData.durationSeconds }, // optional
-      { trait_type: "Sport Type", value: courseData.sportType },
-      { trait_type: "Location", value: courseData.location },
-      { trait_type: "Time", value: courseData.time || '' }, // legacy
-      { trait_type: "TimeStart", value: courseData.timeStart || '' },
-      { trait_type: "TimeEnd", value: courseData.timeEnd || '' },
-      { trait_type: "Trainer", value: courseData.trainer }
-    ]
+    return {
+      name: courseData.title,
+      description: courseData.description,
+      image: courseData.image,
+      // Include data as direct properties for easier access
+      timeStart: courseData.timeStart || '',
+      timeEnd: courseData.timeEnd || '',
+      location: courseData.location || '',
+      sportType: courseData.sportType || 'OTHER',
+      capacity: courseData.capacity || undefined,
+      attributes: [
+        { trait_type: "Price", value: courseData.price },
+        { trait_type: "Sport Type", value: courseData.sportType },
+        { trait_type: "Location", value: courseData.location },
+        { trait_type: "TimeStart", value: courseData.timeStart || '' },
+        { trait_type: "TimeEnd", value: courseData.timeEnd || '' },
+        { trait_type: "Trainer", value: courseData.trainer },
+        { trait_type: "Capacity", value: courseData.capacity || '' }
+      ]
+    };
   };
-};

@@ -1,21 +1,20 @@
 
 export interface Course {
-  id: string;
-  title: string;
-  description: string;
-  price: string;
-  image: string;
-  duration: number; // in days
-  sportType: SportType;
-  trainer: string;
-  location: string;
-  time?: string; // legacy single time
-  timeStart?: string; // ISO datetime string
-  timeEnd?: string;   // ISO datetime string
-  tokenId?: string;
-  ipfsHash?: string;
-  createdAt: number;
-}
+    id: string;
+    title: string;
+    description: string;
+    price: string;
+    image: string;
+    sportType: SportType;
+    trainer: string;
+    location: string;
+    timeStart?: string; // ISO datetime string
+    timeEnd?: string;   // ISO datetime string
+    tokenId?: string;
+    ipfsHash?: string;
+    createdAt: number;
+    capacity?: number; // Maximum number of participants
+  }
 
 export enum SportType {
   YOGA = "Yoga",
@@ -31,9 +30,11 @@ export enum SportType {
 }
 
 export interface BookedCourse extends Course {
-  bookedAt: number;
-  expiresAt: number;
-}
+   bookedAt: number;
+   expiresAt: number;
+   time?: string; // legacy field for backward compatibility
+   duration?: number; // legacy field for backward compatibility
+ }
 
 export interface Trainer {
   address: string;
