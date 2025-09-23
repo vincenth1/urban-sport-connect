@@ -155,7 +155,25 @@ const Profile = ({ initialTab }: ProfileProps) => {
   const handleDeleteCourse = async (courseId: string) => {
     setIsDeletingCourse(true);
     try {
+      console.log('Starting course deletion for:', courseId);
+
+      // Check for active bookings first
+      console.log('Checking for active bookings...');
+      const itemNft = await getItemNft(courseId);
+      const activeCount = await itemNft.activeRenterCount(1);
+      console.log('Active renter count:', Number(activeCount));
+
+      if (Number(activeCount) > 0) {
+        toast({
+          title: 'Cannot Delete Course',
+          description: `This course has ${activeCount} active booking(s). You cannot delete a course with active participants.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
       // Step 1: Update IPFS metadata to mark as deleted
+      console.log('Step 1: Updating IPFS metadata');
       toast({ title: 'Deleting Course', description: 'Updating course metadata...' });
       const deletedMeta = {
         name: '[DELETED COURSE]',
@@ -166,35 +184,49 @@ const Profile = ({ initialTab }: ProfileProps) => {
         ]
       };
       const ipfsUri = await uploadToIPFS(deletedMeta);
+      console.log('IPFS upload successful, URI:', ipfsUri);
 
       // Step 2: Update on-chain metadata
+      console.log('Step 2: Updating on-chain metadata');
       toast({ title: 'Deleting Course', description: 'Updating blockchain metadata...' });
       await setItemMetadata(courseId, 1, '[DELETED COURSE]', 'This course has been deleted by the trainer', ipfsUri);
+      console.log('On-chain metadata updated successfully');
 
       // Step 3: Try to burn the NFT (may fail if contract doesn't have burn function)
+      console.log('Step 3: Attempting to burn NFT');
       toast({ title: 'Deleting Course', description: 'Removing NFT from blockchain...' });
       try {
         await burnItemNft(courseId, 1);
+        console.log('NFT burned successfully');
       } catch (burnError) {
         console.warn('Burn failed (contract may not have burn function):', burnError);
         // Continue with deletion even if burn fails
       }
 
       // Step 4: Remove from NFTCounter registry
+      console.log('Step 4: Removing from NFTCounter registry');
       toast({ title: 'Deleting Course', description: 'Removing from course registry...' });
       await removeFromCounter(courseId, import.meta.env.VITE_SECRET);
+      console.log('Removed from registry successfully');
 
       // Step 5: Remove from local state completely
+      console.log('Step 5: Removing from local state');
       removeCourseFromState(courseId);
       toast({ title: 'Course Deleted', description: 'Course has been successfully deleted' });
+      console.log('Course deletion completed successfully');
 
       setShowDeleteDialog(false);
       setDeletingCourseId(null);
     } catch (error) {
       console.error('Failed to delete course:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        courseId
+      });
       toast({
         title: 'Delete Failed',
-        description: 'Failed to delete course. Please try again.',
+        description: `Failed to delete course: ${error.message || 'Unknown error'}. Please try again.`,
         variant: 'destructive'
       });
     } finally {

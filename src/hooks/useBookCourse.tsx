@@ -38,7 +38,7 @@ export const useBookCourse = (onCourseBooked: (course: BookedCourse) => void) =>
       console.error('Failed to book course:', error);
       toast({
         title: "Booking Failed",
-        description: "Failed to book the course. Please try again.",
+        description: "Failed to book the course. The owner cannot book his own course.",
         variant: "destructive",
       });
     } finally {

@@ -149,7 +149,7 @@ export const useCourses = () => {
     }
   }, [account, user]);
 
-  // Periodically prune expired bookings from view
+  // Periodically prune expired bookings and deleted courses from view
   const bookedRef = useRef<BookedCourse[]>([]);
   useEffect(() => {
     bookedRef.current = bookedCourses;
@@ -160,6 +160,13 @@ export const useCourses = () => {
       const updated: BookedCourse[] = [];
       for (const b of prev) {
         try {
+          // Check if course still exists (not deleted)
+          const courseExists = courses.some(c => c.id === b.id);
+          if (!courseExists) {
+            console.log('Removing booking for deleted course:', b.id);
+            continue; // Skip this booking as course is deleted
+          }
+
           const status = await getRentalStatus(b.id, Number(b.tokenId || '1'), account || '');
           const isStillUser = status.user.toLowerCase() === (account || '').toLowerCase();
           const stillValid = Date.now() < status.expires;
@@ -167,13 +174,19 @@ export const useCourses = () => {
             updated.push({ ...b, expiresAt: status.expires });
           }
         } catch (e) {
-          if (Date.now() < b.expiresAt) updated.push(b);
+          // If we can't check the status but the course exists and booking hasn't expired, keep it
+          if (Date.now() < b.expiresAt) {
+            const courseExists = courses.some(c => c.id === b.id);
+            if (courseExists) {
+              updated.push(b);
+            }
+          }
         }
       }
       setBookedCourses(filterExpiredCourses(updated));
     }, 15000);
     return () => clearInterval(interval);
-  }, [account]);
+  }, [account, courses]);
 
   // Handle booking a course
   const handleCourseBooked = (bookedCourse: BookedCourse) => {
