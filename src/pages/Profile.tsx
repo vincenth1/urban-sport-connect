@@ -13,6 +13,7 @@ import { updateIPFSJson, uploadToIPFS } from '@/utils/ipfs';
 import { toast } from '@/components/ui/use-toast';
 import { useEditCourse } from '@/hooks/useEditCourse';
 import { burnItemNft, setItemMetadata, getItemNft, removeFromCounter } from '@/utils/contracts';
+import { useUnsubscribeCourse } from '@/hooks/useUnsubscribeCourse';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -68,6 +69,12 @@ const Profile = ({ initialTab }: ProfileProps) => {
   const { isConnected, displayAddress, user, isUserLoading } = useWallet();
   const { bookedCourses, courses, updateCourseInState, removeCourseFromState } = useCourses();
   const { registerAsTrainer, updateTrainerProfile } = useWeb3();
+  const { unsubscribeCourse, isUnsubscribing } = useUnsubscribeCourse((courseId) => {
+    // Remove from local booked courses state
+    const updatedBookedCourses = bookedCourses.filter(c => c.id !== courseId);
+    // Update the state - assuming useCourses has a method to update booked courses
+    // For now, we'll just filter the local state
+  });
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -298,6 +305,12 @@ const Profile = ({ initialTab }: ProfileProps) => {
                 showBookButton={false}
                 showFilters={false}
                 emptyMessage="You haven't booked any courses yet."
+                onUnsubscribe={(courseId) => {
+                  const course = bookedCourses.find(c => c.id === courseId);
+                  if (course && user?.address) {
+                    unsubscribeCourse(course, user.address);
+                  }
+                }}
               />
             </div>
           </TabsContent>

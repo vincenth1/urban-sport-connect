@@ -13,6 +13,7 @@ interface CourseGridProps {
   emptyMessage?: string;
   showFilters?: boolean;
   onBook?: (courseId: string) => void;
+  onUnsubscribe?: (courseId: string) => void;
 }
 
 const CourseGrid = ({
@@ -22,7 +23,8 @@ const CourseGrid = ({
   showBookButton = true,
   emptyMessage = "No courses found",
   showFilters = true,
-  onBook
+  onBook,
+  onUnsubscribe
 }: CourseGridProps) => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   
@@ -68,12 +70,13 @@ const CourseGrid = ({
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredCourses.map((course) => (
-          <CourseCard 
-            key={course.id} 
-            course={course} 
+          <CourseCard
+            key={course.id}
+            course={course}
             isBooked={isBooked}
             showBookButton={showBookButton}
             onBook={onBook}
+            onUnsubscribe={onUnsubscribe}
           />
         ))}
       </div>

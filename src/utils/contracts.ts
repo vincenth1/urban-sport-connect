@@ -46,6 +46,7 @@ const ITEM_NFT_ABI = [
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'description', type: 'string' }, { internalType: 'string', name: 'image', type: 'string' }], name: 'setTokenMetadata', outputs: [], stateMutability: 'nonpayable', type: 'function' },
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'getTokenMetadata', outputs: [{ components: [{ internalType: 'string', name: 'name', type: 'string' }, { internalType: 'string', name: 'description', type: 'string' }, { internalType: 'string', name: 'image', type: 'string' }], internalType: 'struct ItemNft.NFTMetadata', name: '', type: 'tuple' }], stateMutability: 'view', type: 'function' },
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }, { internalType: 'uint64', name: 'expires', type: 'uint64' }], name: 'rentItem', outputs: [], stateMutability: 'payable', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'unrentItem', outputs: [], stateMutability: 'nonpayable', type: 'function' },
   { inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }], name: 'burn', outputs: [], stateMutability: 'nonpayable', type: 'function' }
 ];
 
@@ -148,5 +149,12 @@ export const burnItemNft = async (itemAddress: string, tokenId: number) => {
   const signer = await getSigner();
   const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, signer);
   const tx = await item.burn(tokenId);
+  await tx.wait();
+};
+
+export const unrentItem = async (itemAddress: string, tokenId: number) => {
+  const signer = await getSigner();
+  const item = new ethers.Contract(itemAddress, ITEM_NFT_ABI, signer);
+  const tx = await item.unrentItem(tokenId);
   await tx.wait();
 };

@@ -7,25 +7,33 @@ import { useWallet } from '@/hooks/useWallet';
 import { useCourses } from '@/hooks/useCourses';
 import { getItemNft } from '@/utils/contracts';
 import { formatDistance } from 'date-fns';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useUnsubscribeCourse } from '@/hooks/useUnsubscribeCourse';
 
 interface CourseCardProps {
   course: Course | BookedCourse;
   isBooked?: boolean;
   showBookButton?: boolean;
   onBook?: (courseId: string) => void;
+  onUnsubscribe?: (courseId: string) => void;
 }
 
-const CourseCard = ({ 
-  course, 
-  isBooked = false, 
+const CourseCard = ({
+  course,
+  isBooked = false,
   showBookButton = true,
-  onBook
+  onBook,
+  onUnsubscribe
 }: CourseCardProps) => {
-  const { isConnected } = useWallet();
+  const { isConnected, account } = useWallet();
   const { bookCourse } = useCourses();
+  const { unsubscribeCourse, isUnsubscribing } = useUnsubscribeCourse((courseId) => {
+    if (onUnsubscribe) {
+      onUnsubscribe(courseId);
+    }
+  });
   
   // Check if the course is a booked course with expiration
   const bookedCourse = isBooked ? course as BookedCourse : null;
@@ -37,6 +45,12 @@ const CourseCard = ({
       } else {
         bookCourse(course.id);
       }
+    }
+  };
+
+  const handleUnsubscribe = () => {
+    if (isConnected && account) {
+      unsubscribeCourse(course, account);
     }
   };
 
@@ -133,8 +147,27 @@ const CourseCard = ({
       
       <CardFooter className="px-4 py-3 border-t">
         {isBooked ? (
-          <div className="w-full">
-            <span className="text-sm text-primary font-medium">Already booked</span>
+          <div className="w-full flex gap-2">
+            <span className="text-sm text-primary font-medium flex-1">Already booked</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUnsubscribe}
+              disabled={isUnsubscribing}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              {isUnsubscribing ? (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600 mr-1"></div>
+                  Unsubscribing...
+                </>
+              ) : (
+                <>
+                  <X className="h-3 w-3 mr-1" />
+                  Unsubscribe
+                </>
+              )}
+            </Button>
           </div>
         ) : (
           showBookButton && (() => {
@@ -143,7 +176,7 @@ const CourseCard = ({
               ? 'Connect your wallet to book this course'
               : (!capacityInfo.ok ? (capacityInfo.reason || 'Unavailable') : '');
             const button = (
-              <Button 
+              <Button
                 className="w-full"
                 variant="default"
                 onClick={handleBook}

@@ -38,6 +38,11 @@ contract ItemNft is ERC4907, Ownable {
         uint256 indexed tokenId
     );
 
+    event Unrent(
+        address indexed renter,
+        uint256 indexed tokenId
+    );
+
     constructor(
         string memory name,
         string memory symbol,
@@ -167,6 +172,26 @@ contract ItemNft is ERC4907, Ownable {
 
     function contractBalance() external view returns (uint256) {
         return address(this).balance;
+    }
+
+    //#####################################################################
+    // Unrent item - allows renter to cancel their rental
+    //#####################################################################
+    function unrentItem(uint256 tokenId) external {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(isActiveRenter(tokenId, msg.sender), "Not currently renting this item");
+        require(_renterExpires[tokenId][msg.sender] > block.timestamp, "Rental has already expired");
+
+        // Remove from renters set
+        _renters[tokenId].remove(msg.sender);
+        // Clear expiration
+        delete _renterExpires[tokenId][msg.sender];
+        // Decrease active count
+        if (_activeCount[tokenId] > 0) {
+            unchecked { _activeCount[tokenId]--; }
+        }
+
+        emit Unrent(msg.sender, tokenId);
     }
 
     //#####################################################################
