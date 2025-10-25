@@ -154,11 +154,7 @@ const Index = () => {
                     Browse Courses
                   </Button>
                 </Link>
-                <Link to="/trainer-dashboard">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-white border-white/20 hover:bg-white/10 hover:text-white">
-                    Offer Your Expertise
-                  </Button>
-                </Link>
+           
               </div>
             </div>
           </div>
