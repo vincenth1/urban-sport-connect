@@ -15,69 +15,6 @@ const Footer = () => {
               Decentralized platform for urban sports courses, powered by blockchain technology.
             </p>
           </div>
-          
-          <div>
-            <h4 className="font-medium mb-4">Platform</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/courses" className="text-muted-foreground hover:text-primary transition-colors">
-                  Browse Courses
-                </Link>
-              </li>
-              <li>
-                <Link to="/profile" className="text-muted-foreground hover:text-primary transition-colors">
-                  My Profile
-                </Link>
-              </li>
-              <li>
-                <Link to="/trainer-dashboard" className="text-muted-foreground hover:text-primary transition-colors">
-                  Become a Trainer
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-medium mb-4">Resources</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Documentation
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Smart Contracts
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  IPFS Storage
-                </a>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-medium mb-4">Legal</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Cookie Policy
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
         
         <div className="mt-10 pt-6 border-t text-center text-sm text-muted-foreground">
