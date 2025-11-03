@@ -4,12 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 async function main() {
-  // Deploy NFTCounter using secret from .env
-  const SECRET_STRING = process.env.REACT_APP_SECRET;
-  if (!SECRET_STRING) throw new Error('REACT_APP_SECRET missing');
+  // Deploy NFTCounter (no secret needed)
   const NFTCounter = await ethers.getContractFactory("NFTCounter");
-  const secretHash = ethers.keccak256(ethers.toUtf8Bytes(SECRET_STRING));
-  const nftCounter = await NFTCounter.deploy(secretHash);
+  const nftCounter = await NFTCounter.deploy();
   await nftCounter.waitForDeployment();
   const address = await nftCounter.getAddress();
   console.log("NFTCounter deployed:", address);

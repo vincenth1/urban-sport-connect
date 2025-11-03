@@ -213,7 +213,7 @@ const Profile = ({ initialTab }: ProfileProps) => {
       // Step 4: Remove from NFTCounter registry
       console.log('Step 4: Removing from NFTCounter registry');
       toast({ title: 'Deleting Course', description: 'Removing from course registry...' });
-      await removeFromCounter(courseId, import.meta.env.VITE_SECRET);
+      await removeFromCounter(courseId);
       console.log('Removed from registry successfully');
 
       // Step 5: Remove from local state completely

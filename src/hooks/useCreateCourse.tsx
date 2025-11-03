@@ -37,7 +37,7 @@ export const useCreateCourse = (onCourseCreated: (course: Course) => void) => {
       await setItemMetadata(itemAddress, 1, newCourse.title, newCourse.description, ipfsUri);
 
       // 4) Register in NFTCounter using secret from env
-      await registerInCounter(itemAddress, import.meta.env.VITE_SECRET);
+      await registerInCounter(itemAddress);
 
       const course: Course = {
         ...newCourse,

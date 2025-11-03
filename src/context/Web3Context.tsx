@@ -103,7 +103,12 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
     try {
       if (!account) throw new Error('No account');
       setIsUserLoading(true);
-      // Client-side trainer flag (no on-chain registry in ItemNft/NFTCounter flow)
+
+      // Register as trainer on-chain
+      const { registerAsTrainer: registerOnChain } = await import('@/utils/contracts');
+      await registerOnChain();
+
+      // Client-side trainer flag
       localStorage.setItem(`isTrainer:${account}`, 'true');
       const profile: Trainer = { address: account, name, bio, avatar, courses: [] };
       try {

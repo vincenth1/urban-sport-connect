@@ -20,12 +20,17 @@ export const getSigner = async (): Promise<ethers.Signer> => {
 export const NFT_COUNTER_ADDRESS = import.meta.env.VITE_NFT_COUNTER_ADDRESS as string;
 
 const NFT_COUNTER_ABI = [
-  { inputs: [{ internalType: 'bytes32', name: '_hash', type: 'bytes32' }], stateMutability: 'nonpayable', type: 'constructor' },
-  { inputs: [], name: 'getTotalNFTs', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
-  { inputs: [], name: 'getNFTContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
-  { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }, { internalType: 'string', name: 'secret', type: 'string' }], name: 'registerNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }, { internalType: 'string', name: 'secret', type: 'string' }], name: 'removeNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' }
-];
+   { inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
+   { inputs: [], name: 'getTotalNFTs', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+   { inputs: [], name: 'getNFTContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
+   { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }], name: 'registerNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+   { inputs: [{ internalType: 'address', name: 'nftContractAddress', type: 'address' }], name: 'removeNFTContract', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+   { inputs: [], name: 'registerAsTrainer', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+   { inputs: [{ internalType: 'address', name: '', type: 'address' }], name: 'registeredTrainers', outputs: [{ internalType: 'bool', name: '', type: 'bool' }], stateMutability: 'view', type: 'function' },
+   { inputs: [], name: 'totalContracts', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+   { inputs: [{ internalType: 'address', name: '', type: 'address' }], name: 'isRegistered', outputs: [{ internalType: 'bool', name: '', type: 'bool' }], stateMutability: 'view', type: 'function' },
+   { inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], name: 'nftContracts', outputs: [{ internalType: 'address', name: '', type: 'address' }], stateMutability: 'view', type: 'function' }
+ ];
 
 const ITEM_NFT_ABI = [
   { inputs: [
@@ -106,15 +111,21 @@ export const changeItemPrice = async (itemAddress: string, newPriceEth: string) 
   await tx.wait();
 };
 
-export const registerInCounter = async (itemAddress: string, secret: string) => {
+export const registerInCounter = async (itemAddress: string) => {
   const counter = await getNFTCounter();
-  const tx = await counter.registerNFTContract(itemAddress, secret);
+  const tx = await counter.registerNFTContract(itemAddress);
   await tx.wait();
 };
 
-export const removeFromCounter = async (itemAddress: string, secret: string) => {
+export const removeFromCounter = async (itemAddress: string) => {
   const counter = await getNFTCounter();
-  const tx = await counter.removeNFTContract(itemAddress, secret);
+  const tx = await counter.removeNFTContract(itemAddress);
+  await tx.wait();
+};
+
+export const registerAsTrainer = async () => {
+  const counter = await getNFTCounter();
+  const tx = await counter.registerAsTrainer();
   await tx.wait();
 };
 
