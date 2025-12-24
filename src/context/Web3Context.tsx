@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { WalletStatus, User, Web3ContextState, Trainer, BookedCourse } from '@/types';
-import { uploadToIPFS } from '@/utils/ipfs';
+import { uploadToIPFS, fetchFromIPFSMemo } from '@/utils/ipfs';
 import { toast } from '@/components/ui/use-toast';
 import { getProvider } from '@/utils/contracts';
 
@@ -41,13 +41,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
             const addr = accounts[0].address;
             setAccount(addr);
             setStatus(WalletStatus.CONNECTED);
-            const isTrainerFlag = localStorage.getItem(`isTrainer:${addr}`) === 'true';
-            const storedProfileRaw = localStorage.getItem(`trainerProfile:${addr}`);
-            const storedProfile = storedProfileRaw ? JSON.parse(storedProfileRaw) : undefined;
-            const storedBookedRaw = localStorage.getItem(`booked:${addr}`);
-            const storedBooked = storedBookedRaw ? JSON.parse(storedBookedRaw) : [];
-            const base: User = { address: addr, bookedCourses: storedBooked, isTrainer: isTrainerFlag, trainerProfile: storedProfile };
-            setUser(base);
+            await loadUserData(addr);
           }
         }
       } catch (error) {
@@ -57,6 +51,43 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
     };
     checkConnection();
   }, []);
+
+  const loadUserData = async (addr: string) => {
+    setIsUserLoading(true);
+    try {
+      const isTrainerFlag = localStorage.getItem(`isTrainer:${addr}`) === 'true';
+      const storedBookedRaw = localStorage.getItem(`booked:${addr}`);
+      const storedBooked = storedBookedRaw ? JSON.parse(storedBookedRaw) : [];
+
+      let trainerProfile: Trainer | undefined;
+      if (isTrainerFlag) {
+        const profileIpfsUri = localStorage.getItem(`trainerProfileIpfs:${addr}`);
+        if (profileIpfsUri) {
+          try {
+            const profileData = await fetchFromIPFSMemo(profileIpfsUri);
+            trainerProfile = {
+              address: addr,
+              name: profileData.name,
+              bio: profileData.bio,
+              avatar: profileData.avatar,
+              courses: [],
+              profileIpfs: profileIpfsUri
+            };
+          } catch (error) {
+            console.warn('Failed to load trainer profile from IPFS:', error);
+            // No fallback to localStorage - profile will be undefined
+          }
+        }
+      }
+
+      const base: User = { address: addr, bookedCourses: storedBooked, isTrainer: isTrainerFlag, trainerProfile };
+      setUser(base);
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+    } finally {
+      setIsUserLoading(false);
+    }
+  };
 
   const connectWallet = async () => {
     try {
@@ -70,15 +101,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
       const addr = accounts[0];
       setAccount(addr);
       setStatus(WalletStatus.CONNECTED);
-      setIsUserLoading(true);
-      const isTrainerFlag = localStorage.getItem(`isTrainer:${addr}`) === 'true';
-      const storedProfileRaw = localStorage.getItem(`trainerProfile:${addr}`);
-      const storedProfile = storedProfileRaw ? JSON.parse(storedProfileRaw) : undefined;
-      const storedBookedRaw = localStorage.getItem(`booked:${addr}`);
-      const storedBooked = storedBookedRaw ? JSON.parse(storedBookedRaw) : [];
-      const base: User = { address: addr, bookedCourses: storedBooked, isTrainer: isTrainerFlag, trainerProfile: storedProfile };
-      setUser(base);
-      setIsUserLoading(false);
+      await loadUserData(addr);
       toast({ title: 'Wallet Connected', description: `Connected to ${addr}` });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
@@ -101,28 +124,41 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
   const registerAsTrainer = async (name: string, bio: string, avatar: string) => {
     try {
+      console.log('Starting trainer registration...');
       if (!account) throw new Error('No account');
       setIsUserLoading(true);
 
+      console.log('Registering as trainer on-chain...');
       // Register as trainer on-chain
       const { registerAsTrainer: registerOnChain } = await import('@/utils/contracts');
       await registerOnChain();
+      console.log('On-chain registration successful');
 
       // Client-side trainer flag
       localStorage.setItem(`isTrainer:${account}`, 'true');
-      const profile: Trainer = { address: account, name, bio, avatar, courses: [] };
-      try {
-        const profileIpfs = await uploadToIPFS({ address: account, name, bio, avatar });
-        profile.profileIpfs = profileIpfs;
-      } catch (e) {
-        console.warn('Failed to upload trainer profile to IPFS, falling back to local only', e);
-      }
-      localStorage.setItem(`trainerProfile:${account}`, JSON.stringify(profile));
+
+      console.log('Uploading profile to IPFS...');
+      // Upload profile to IPFS
+      const profileIpfs = await uploadToIPFS({ address: account, name, bio, avatar });
+      console.log('IPFS upload successful:', profileIpfs);
+      localStorage.setItem(`trainerProfileIpfs:${account}`, profileIpfs);
+
+      // Create profile object with IPFS reference
+      const profile: Trainer = {
+        address: account,
+        name,
+        bio,
+        avatar,
+        courses: [],
+        profileIpfs
+      };
+
       setUser(prev => prev ? { ...prev, isTrainer: true, trainerProfile: profile } : prev);
       toast({ title: 'Registration Successful', description: 'You are now registered as a trainer!' });
+      console.log('Trainer registration completed');
     } catch (error) {
       console.error('Failed to register as trainer:', error);
-      toast({ title: 'Registration Failed', description: 'Failed to register as trainer', variant: 'destructive' });
+      toast({ title: 'Registration Failed', description: `Failed to register as trainer: ${error.message}`, variant: 'destructive' });
     } finally {
       setIsUserLoading(false);
     }
@@ -130,17 +166,33 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
   const updateTrainerProfile = async (name: string, bio: string, avatar: string) => {
     try {
+      console.log('Starting profile update with:', { name, bio, avatar });
       if (!account) throw new Error('No account');
       setIsUserLoading(true);
-      const profile: Trainer = { address: account, name, bio, avatar, courses: [], profileIpfs: undefined };
-      try {
-        const profileIpfs = await uploadToIPFS({ address: account, name, bio, avatar });
-        profile.profileIpfs = profileIpfs;
-      } catch (e) {
-        console.warn('Failed to upload trainer profile to IPFS');
-      }
-      localStorage.setItem(`trainerProfile:${account}`, JSON.stringify(profile));
-      setUser(prev => prev ? { ...prev, trainerProfile: profile, isTrainer: true } : prev);
+
+      // Upload updated profile to IPFS
+      console.log('Uploading to IPFS...');
+      const profileIpfs = await uploadToIPFS({ address: account, name, bio, avatar });
+      console.log('IPFS upload successful, new URI:', profileIpfs);
+      localStorage.setItem(`trainerProfileIpfs:${account}`, profileIpfs);
+
+      // Create updated profile object
+      const profile: Trainer = {
+        address: account,
+        name,
+        bio,
+        avatar,
+        courses: [],
+        profileIpfs
+      };
+
+      console.log('Setting user with new profile:', profile);
+      setUser(prev => {
+        console.log('Previous user state:', prev);
+        const newUser = prev ? { ...prev, trainerProfile: profile, isTrainer: true } : prev;
+        console.log('New user state:', newUser);
+        return newUser;
+      });
       toast({ title: 'Profile Updated', description: 'Your trainer profile has been updated.' });
     } catch (e) {
       console.error('Failed to update trainer profile', e);

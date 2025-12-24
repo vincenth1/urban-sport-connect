@@ -63,7 +63,7 @@ const CapacityDisplay = ({ courseId, tokenId, fallbackCapacity }: { courseId: st
   );
 };
 
-type ProfileProps = { initialTab?: 'booked' | 'trainer' | 'become-trainer' };
+type ProfileProps = { initialTab?: 'booked' | 'trainer' };
 
 const Profile = ({ initialTab }: ProfileProps) => {
   const { isConnected, displayAddress, user, isUserLoading } = useWallet();
@@ -81,7 +81,7 @@ const Profile = ({ initialTab }: ProfileProps) => {
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'booked' | 'trainer' | 'become-trainer'>(initialTab || 'booked');
+  const [activeTab, setActiveTab] = useState<'booked' | 'trainer'>(initialTab || 'booked');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const { isSaving: isSavingCourse, saveCourse } = useEditCourse((updated) => {
     updateCourseInState(updated);
@@ -287,15 +287,10 @@ const Profile = ({ initialTab }: ProfileProps) => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <TabsList className="mb-8">
-            <TabsTrigger value="booked">My Booked</TabsTrigger>
-            {user?.isTrainer && (
-              <TabsTrigger value="trainer">My Trainer Space</TabsTrigger>
-            )}
-            {!user?.isTrainer && (
-              <TabsTrigger value="become-trainer">Become a Trainer</TabsTrigger>
-            )}
-          </TabsList>
+           <TabsList className="mb-8">
+             <TabsTrigger value="booked">My Booked</TabsTrigger>
+             <TabsTrigger value="trainer">My Trainer Space</TabsTrigger>
+           </TabsList>
 
           <TabsContent value="booked">
             <div className="space-y-8">
@@ -315,7 +310,36 @@ const Profile = ({ initialTab }: ProfileProps) => {
             </div>
           </TabsContent>
 
-          {user?.isTrainer && (
+          {user?.isTrainer && !user.trainerProfile && (
+            <TabsContent value="trainer">
+              <Card className="max-w-md mx-auto">
+                <CardHeader className="text-center">
+                  <CardTitle>Profile Not Found</CardTitle>
+                  <CardDescription>
+                    Your trainer profile could not be loaded from IPFS. This may happen if:
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li>• You registered as a trainer on a different device</li>
+                    <li>• There was an issue with IPFS connectivity</li>
+                    <li>• Your profile data was corrupted</li>
+                  </ul>
+                  <div className="pt-4">
+                    <p className="text-sm font-medium mb-4">To restore your profile, please register as a trainer again:</p>
+                    <Button
+                      onClick={handleRegisterAsTrainer}
+                      className="w-full"
+                    >
+                      Register as Trainer Again
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {user?.isTrainer && user.trainerProfile && (
             <TabsContent value="trainer">
               <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
                 {/* Trainer Profile Card */}
@@ -634,84 +658,6 @@ const Profile = ({ initialTab }: ProfileProps) => {
             </TabsContent>
           )}
 
-          {!user?.isTrainer && (
-            <TabsContent value="become-trainer">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Become a Trainer</CardTitle>
-                  <CardDescription>
-                    Fill out the form below to register as a trainer and start creating courses.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleRegisterAsTrainer} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        placeholder="Enter your full name"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        required
-                        placeholder="Tell us about your experience, qualifications, etc."
-                        className="min-h-[120px]"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="avatar">Profile Picture URL</Label>
-                      <Input
-                        id="avatar"
-                        value={avatar}
-                        onChange={(e) => setAvatar(e.target.value)}
-                        placeholder="https://example.com/your-image.jpg"
-                      />
-
-                      {avatar && (
-                        <div className="mt-2 flex justify-center">
-                          <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-200">
-                            <img
-                              src={avatar}
-                              alt="Profile preview"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Registering...
-                        </>
-                      ) : (
-                        <>Register as Trainer</>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
         </Tabs>
       </div>
 
