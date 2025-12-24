@@ -113,6 +113,7 @@ Open the app, connect MetaMask, and switch to your target network.
 1) Register as Trainer
 - Go to Profile and fill out trainer details. This registers you as a trainer on-chain and flags your account as trainer in the app.
 - Your trainer profile (name, bio, avatar) is uploaded to IPFS and stored in localStorage for quick loading.
+<img width="1919" height="967" alt="s1" src="https://github.com/user-attachments/assets/49c23fc7-571c-4e6e-a1e5-b7b0dcfc4a1c" />
 
 2) Create a Course
 - Navigate to Create Course.
@@ -123,14 +124,17 @@ Open the app, connect MetaMask, and switch to your target network.
   - Deploys a new `ItemNft` via MetaMask
   - Sets token metadata on-chain (image field stores the ipfs:// URI so the app can fetch the full JSON)
   - Registers the contract in `NFTCounter` (only registered trainers can register contracts)
+<img width="1919" height="968" alt="s22" src="https://github.com/user-attachments/assets/40f76db6-bf4a-4926-940d-d7710f3be36f" />
 
 3) Browse Courses
 - Courses are listed by fetching all registered `ItemNft` contracts from `NFTCounter`, reading each contract’s metadata and rent price.
 - If the on-chain metadata points to an `ipfs://...`, the app fetches and displays the richer JSON from IPFS.
+<img width="1919" height="965" alt="s33" src="https://github.com/user-attachments/assets/08a2270d-b352-4225-b246-4c392c9392e0" />
 
 4) Book a Course
 - Click "Book Course" and have the needed funds in your wallet (for Sonic Testnet the according tokens).
 - Confirm the MetaMask transaction to complete the booking with the chosen expiry time.
+<img width="1919" height="969" alt="s4" src="https://github.com/user-attachments/assets/1c656212-7044-4475-bb92-21e87a98858b" />
 
 5) Edit Trainer Profile and Courses
 - Trainer Profile (Profile → Trainer tab):
