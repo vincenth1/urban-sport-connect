@@ -151,3 +151,9 @@ Open the app, connect MetaMask, and switch to your target network.
 ## Scripts
 
 - `scripts/deploy.js`: Deploys `NFTCounter` using `REACT_APP_SECRET`.
+
+## Screenshots
+<img width="1920" height="969" alt="t1" src="https://github.com/user-attachments/assets/6a73c936-f540-41c1-8a57-9d203561296e" />
+<img width="1921" height="969" alt="t2" src="https://github.com/user-attachments/assets/ed86afde-324c-445f-a88f-5e8d6eade576" />
+<img width="1918" height="967" alt="t3" src="https://github.com/user-attachments/assets/91f53fa2-4be7-4d6f-95eb-fa098eee54e2" />
+
